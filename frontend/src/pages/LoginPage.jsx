@@ -1,11 +1,9 @@
-// src/pages/LoginPage.jsx
-
 import React, { useState, useContext, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import styles from './Auth.module.css';
 import axios from 'axios';
 import { AuthContext } from '../context/AuthContext';
-import { toast } from 'react-toastify'; // Import toast
+import { toast } from 'react-toastify';
 
 function LoginPage() {
   const [formData, setFormData] = useState({ email: '', password: '' });
@@ -30,12 +28,13 @@ function LoginPage() {
     e.preventDefault();
     try {
       const response = await axios.post('http://localhost:5000/api/auth/login', formData);
-      toast.success('Login successful!'); // REPLACED alert()
+      toast.success('Login successful!');
+      // The response.data from the backend already includes the token
       localStorage.setItem('userInfo', JSON.stringify(response.data));
       setUser(response.data);
     } catch (error) {
       const message = error.response?.data?.message || 'Login failed. Please try again.';
-      toast.error(message); // REPLACED alert()
+      toast.error(message);
     }
   };
 
@@ -69,3 +68,4 @@ function LoginPage() {
 }
 
 export default LoginPage;
+

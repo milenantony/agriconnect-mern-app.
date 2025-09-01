@@ -10,6 +10,10 @@ const authRoutes = require('./routes/authRoutes');
 const productRoutes = require('./routes/productRoutes');
 const adminRoutes = require('./routes/adminRoutes');
 const userRoutes = require('./routes/userRoutes');
+const notificationRoutes = require('./routes/notificationRoutes'); // 1. IMPORT
+const broadcastRoutes = require('./routes/broadcastRoutes'); // 1. IMPORT
+
+
 
 dotenv.config();
 const app = express();
@@ -42,6 +46,9 @@ app.use('/api/auth', authRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/admin', adminRoutes); 
 app.use('/api/users', userRoutes);
+app.use('/api/notifications', notificationRoutes); // 2. ADD THIS LINE
+app.use('/api/broadcasts', broadcastRoutes); // 2. ADD THIS LINE
+
 
 // --- SERVER STARTUP ---
 const PORT = process.env.PORT || 5000;

@@ -1,35 +1,35 @@
-// src/context/AuthContext.jsx
-
-import React, { createContext, useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { createContext, useState, useEffect } from "react";
 
 export const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true); // 1. Add loading state
-  const navigate = useNavigate();
+  const [user, setUser] = useState(undefined); // undefined → loading state
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const storedUserInfo = localStorage.getItem('userInfo');
-    if (storedUserInfo) {
-      setUser(JSON.parse(storedUserInfo));
+    const storedUser = localStorage.getItem("userInfo");
+    if (storedUser) {
+      setUser(JSON.parse(storedUser));
+    } else {
+      setUser(null);
     }
-    setLoading(false); // 2. Set loading to false after checking
+    setLoading(false);
   }, []);
 
+  const login = (data) => {
+    // Ensure token & role are saved properly
+    localStorage.setItem("userInfo", JSON.stringify(data));
+    setUser(data);
+  };
+
   const logout = () => {
-    localStorage.removeItem('userInfo');
+    localStorage.removeItem("userInfo");
     setUser(null);
-    navigate('/login');
   };
 
-  const value = {
-    user,
-    setUser,
-    loading, // 3. Provide loading state to the rest of the app
-    logout,
-  };
-
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  return (
+    <AuthContext.Provider value={{ user, setUser, login, logout, loading }}>
+      {children}
+    </AuthContext.Provider>
+  );
 };

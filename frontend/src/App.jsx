@@ -13,6 +13,12 @@ import FarmerDashboard from './pages/FarmerDashboard';
 import AdminDashboard from './pages/AdminDashboard';
 import ProfilePage from './pages/ProfilePage';
 import AboutPage from './pages/AboutPage';
+import BroadcastsPage from './pages/BroadcastsPage'; // 1. IMPORT
+import BroadcastRepliesPage from './pages/BroadcastRepliesPage'; // 1. IMPORT
+import NotificationsPage from './pages/NotificationsPage'; // 1. IMPORT
+
+
+
 
 // Import route protectors
 import ProtectedRoute from './components/ProtectedRoute';
@@ -46,9 +52,18 @@ function App() {
         {/* === Protected Farmer Routes === */}
         <Route path="/farmer/dashboard" element={<ProtectedRoute><FarmerDashboard /></ProtectedRoute>} />
         <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
+        <Route path="/broadcasts" element={<ProtectedRoute><BroadcastsPage /></ProtectedRoute>} />
+        <Route path="/notifications" element={<ProtectedRoute><NotificationsPage /></ProtectedRoute>} /> {/* 2. ADD THIS ROUTE */}
+
+
         
         {/* === Protected Admin Route === */}
         <Route path="/admin/dashboard" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
+        <Route 
+          path="/admin/broadcasts/:broadcastId/replies" 
+          element={<AdminRoute><BroadcastRepliesPage /></AdminRoute>} 
+        />
+
       </Routes>
     </>
   );

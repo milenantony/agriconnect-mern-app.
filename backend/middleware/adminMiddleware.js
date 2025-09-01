@@ -1,11 +1,11 @@
-// backend/middleware/adminMiddleware.js
-
 const admin = (req, res, next) => {
-  // We assume the 'protect' middleware has already run and added 'req.user'
-  if (req.user && req.user.role === 'admin') {
-    next(); // User is an admin, proceed to the next function (the controller)
+  // We check if the user exists AND if their role, converted to lowercase, is 'admin'.
+  // This is the crucial fix.
+  if (req.user && req.user.role.toLowerCase() === 'admin') {
+    next(); // User is an admin, proceed.
   } else {
-    res.status(403).json({ message: 'Not authorized as an admin' }); // 403 Forbidden
+    // If not, send a "Forbidden" status.
+    res.status(403).json({ message: 'Not authorized as an admin' });
   }
 };
 

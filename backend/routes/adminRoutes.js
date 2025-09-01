@@ -1,15 +1,12 @@
-// backend/routes/adminRoutes.js
+    const express = require('express');
+    const router = express.Router();
+    const { getAllFarmers, getAllProductsAdmin, sendNotification } = require('../controllers/adminController'); // 1. Import
+    const { protect } = require('../middleware/authMiddleware');
+    const { admin } = require('../middleware/adminMiddleware');
 
-const express = require('express');
-const router = express.Router();
-const { getAllFarmers, getAllProductsAdmin } = require('../controllers/adminController');
-const { protect } = require('../middleware/authMiddleware');
-const { admin } = require('../middleware/adminMiddleware');
+    router.get('/farmers', protect, admin, getAllFarmers);
+    router.get('/products', protect, admin, getAllProductsAdmin);
+    router.post('/notify', protect, admin, sendNotification); // 2. Add this new route
 
-// Get all farmers (only accessible by logged-in admins)
-router.get('/farmers', protect, admin, getAllFarmers);
-
-// Get all products (only accessible by logged-in admins)
-router.get('/products', protect, admin, getAllProductsAdmin);
-
-module.exports = router;
+    module.exports = router;
+    
