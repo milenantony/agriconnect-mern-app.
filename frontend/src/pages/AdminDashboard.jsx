@@ -16,13 +16,9 @@ function AdminDashboard() {
   const [broadcastMessage, setBroadcastMessage] = useState('');
 
   const fetchData = async () => {
-    if (!user || !user.token) {
-      setLoading(false);
-      return;
-    }
+    if (!user || !user.token) { setLoading(false); return; }
     try {
       const config = { headers: { Authorization: `Bearer ${user.token}` } };
-      // Fetch all data in parallel for faster loading
       const [farmersRes, productsRes, broadcastsRes] = await Promise.all([
         axios.get('http://localhost:5000/api/admin/farmers', config),
         axios.get('http://localhost:5000/api/admin/products', config),
@@ -32,16 +28,14 @@ function AdminDashboard() {
       setProducts(productsRes.data);
       setBroadcasts(broadcastsRes.data);
     } catch (error) {
-      console.error('Failed to fetch admin data', error);
-      toast.error("Failed to load dashboard data.");
-    } finally {
-      setLoading(false);
-    }
+      // THE FIX IS HERE: We now use the 'error' variable
+      const message = error.response?.data?.message || "Failed to load dashboard data.";
+      toast.error(message);
+    } 
+    finally { setLoading(false); }
   };
 
-  useEffect(() => {
-    fetchData();
-  }, [user]);
+  useEffect(() => { fetchData(); }, [user]);
 
   const handleBroadcastSubmit = async (e) => {
     e.preventDefault();
@@ -51,9 +45,10 @@ function AdminDashboard() {
       await axios.post('http://localhost:5000/api/broadcasts', { message: broadcastMessage }, config);
       toast.success("Broadcast sent to all farmers!");
       setBroadcastMessage('');
-      fetchData(); // Refetch all data to update the broadcasts list
+      fetchData();
     } catch (error) {
-      toast.error("Failed to send broadcast.");
+      const message = error.response?.data?.message || "Failed to send broadcast.";
+      toast.error(message);
     }
   };
   
@@ -65,8 +60,52 @@ function AdminDashboard() {
       await axios.post('http://localhost:5000/api/admin/notify', body, config);
       toast.success(`Reminder sent to ${product.farmer.name}!`);
     } catch (error) {
-      toast.error('Failed to send reminder.');
+        const message = error.response?.data?.message || 'Failed to send reminder.';
+        toast.error(message);
     }
+  };
+  
+  const handleDeleteBroadcast = (broadcastId) => {
+    const performDelete = async (id) => {
+        try {
+            const config = { headers: { Authorization: `Bearer ${user.token}` } };
+            await axios.delete(`http://localhost:5000/api/broadcasts/${id}`, config);
+            toast.success("Broadcast deleted successfully.");
+            fetchData();
+        } catch (error) {
+            const message = error.response?.data?.message || "Failed to delete broadcast.";
+            toast.error(message);
+        }
+    };
+
+    const ConfirmationToast = ({ closeToast }) => (
+      <div>
+        <p className="mb-2 fw-bold">Confirm Deletion</p>
+        <p className="mb-3">Are you sure you want to permanently delete this broadcast and all its replies?</p>
+        <div className="d-flex justify-content-end">
+            <button 
+                className="btn btn-sm btn-danger me-2" 
+                onClick={() => {
+                    performDelete(broadcastId);
+                    closeToast();
+                }}
+            >
+                Yes, Delete
+            </button>
+            <button className="btn btn-sm btn-secondary" onClick={closeToast}>
+                Cancel
+            </button>
+        </div>
+      </div>
+    );
+
+    toast.error(<ConfirmationToast />, {
+      position: "top-center",
+      autoClose: false,
+      closeOnClick: false,
+      draggable: false,
+      theme: "colored"
+    });
   };
 
   const lowStockProductsCount = products.filter(p => p.quantity < 10).length;
@@ -77,7 +116,13 @@ function AdminDashboard() {
       <Navbar />
       <div className="bg-light" style={{ minHeight: '100vh' }}>
         <div className="container" style={{ paddingTop: '100px', paddingBottom: '50px' }}>
-          <h1 className="mb-4">Admin Dashboard</h1>
+          <div className="d-flex justify-content-between align-items-center mb-4">
+            <div>
+              <h1 className="mb-0">Admin Dashboard</h1>
+              <p className="lead text-muted">Welcome, {user.name}!</p>
+            </div>
+          </div>
+
           {/* Stat Cards */}
           <div className="row g-4 mb-4">
             <div className="col-md-4">
@@ -115,11 +160,13 @@ function AdminDashboard() {
           <div className="row">
             <div className="col-lg-6 mb-4">
               <div className="card shadow-sm h-100">
+                <div className="card-header bg-white py-3">
+                    <h5 className="mb-0"><i className="fas fa-paper-plane me-2 text-success"></i>Broadcast a Request</h5>
+                </div>
                 <div className="card-body">
-                  <h4 className="card-title mb-3">Broadcast a Request</h4>
                   <form onSubmit={handleBroadcastSubmit}>
                     <div className="mb-3">
-                      <textarea className="form-control" rows="3" placeholder="e.g., Urgent requirement: 50kg of organic tomatoes needed..." value={broadcastMessage} onChange={(e) => setBroadcastMessage(e.target.value)}></textarea>
+                      <textarea className="form-control" rows="4" placeholder="e.g., Urgent requirement: 50kg of organic tomatoes needed..." value={broadcastMessage} onChange={(e) => setBroadcastMessage(e.target.value)}></textarea>
                     </div>
                     <button type="submit" className="btn btn-success">Send to All Farmers</button>
                   </form>
@@ -128,17 +175,28 @@ function AdminDashboard() {
             </div>
             <div className="col-lg-6 mb-4">
               <div className="card shadow-sm h-100">
+                <div className="card-header bg-white py-3">
+                    <h5 className="mb-0"><i className="fas fa-history me-2 text-primary"></i>My Past Broadcasts</h5>
+                </div>
                 <div className="card-body">
-                  <h4 className="card-title mb-3">My Past Broadcasts</h4>
-                  <div className="list-group" style={{maxHeight: '190px', overflowY: 'auto'}}>
+                  <div className="list-group" style={{maxHeight: '220px', overflowY: 'auto'}}>
                     {broadcasts.length === 0 ? (
-                      <p>You have not sent any broadcasts yet.</p>
+                      <p className="text-muted">You have not sent any broadcasts yet.</p>
                     ) : (
                       broadcasts.map(b => (
-                        <Link key={b._id} to={`/admin/broadcasts/${b._id}/replies`} className="list-group-item list-group-item-action">
-                          <p className="mb-1 text-truncate">{b.message}</p>
-                          <small>{new Date(b.createdAt).toLocaleString()}</small>
-                        </Link>
+                        <div key={b._id} className="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                          <Link to={`/admin/broadcasts/${b._id}/replies`} className="text-decoration-none text-dark flex-grow-1">
+                            <p className="mb-1 text-truncate">{b.message}</p>
+                            <small className="text-muted">{new Date(b.createdAt).toLocaleString()}</small>
+                          </Link>
+                          <button 
+                            className="btn btn-sm btn-outline-danger ms-2"
+                            onClick={() => handleDeleteBroadcast(b._id)}
+                            title="Delete Broadcast"
+                          >
+                            <i className="fas fa-trash"></i>
+                          </button>
+                        </div>
                       ))
                     )}
                   </div>
@@ -148,14 +206,16 @@ function AdminDashboard() {
           </div>
           
           <div className="card shadow-sm mb-4">
+            <div className="card-header bg-white py-3">
+                <h5 className="mb-0"><i className="fas fa-carrot me-2 text-warning"></i>All Farm Products</h5>
+            </div>
             <div className="card-body">
-              <h4 className="card-title mb-3">All Farm Products</h4>
               <div className="table-responsive">
                 <table className="table table-hover align-middle">
                   <thead><tr><th>Product Name</th><th>Farmer</th><th>Category</th><th>Stock</th><th>Actions</th></tr></thead>
                   <tbody>
                     {products.length === 0 ? (
-                      <tr><td colSpan="5" className="text-center">No products have been added yet.</td></tr>
+                      <tr><td colSpan="5" className="text-center py-4">No products have been added yet.</td></tr>
                     ) : (
                       products.map(product => (
                         <tr key={product._id} className={product.quantity < 10 ? 'table-danger' : ''}>
@@ -165,8 +225,8 @@ function AdminDashboard() {
                           <td><strong>{product.quantity} {product.unit}</strong></td>
                           <td>
                             {product.quantity < 10 && (
-                              <button className="btn btn-sm btn-warning" onClick={() => handleNotifyFarmer(product)}>
-                                Notify Farmer
+                              <button className="btn btn-sm btn-outline-warning" onClick={() => handleNotifyFarmer(product)}>
+                                Notify
                               </button>
                             )}
                           </td>
@@ -180,14 +240,16 @@ function AdminDashboard() {
           </div>
           
           <div className="card shadow-sm">
+            <div className="card-header bg-white py-3">
+                <h5 className="mb-0"><i className="fas fa-users me-2 text-info"></i>Registered Farmers</h5>
+            </div>
             <div className="card-body">
-              <h4 className="card-title mb-3">Registered Farmers</h4>
               <div className="table-responsive">
                 <table className="table table-hover align-middle">
                   <thead><tr><th>Name</th><th>Email</th><th>Location</th><th>Contact</th></tr></thead>
                   <tbody>
                     {farmers.length === 0 ? (
-                      <tr><td colSpan="4" className="text-center">No farmers have registered yet.</td></tr>
+                      <tr><td colSpan="4" className="text-center py-4">No farmers have registered yet.</td></tr>
                     ) : (
                       farmers.map(farmer => (
                         <tr key={farmer._id}>
@@ -203,6 +265,7 @@ function AdminDashboard() {
               </div>
             </div>
           </div>
+
         </div>
       </div>
       <Footer />

@@ -1,27 +1,37 @@
-// src/components/ProductCard.jsx
-
 import React from 'react';
 import { Link } from 'react-router-dom';
 
-// It now receives a full 'product' object from our database
 function ProductCard({ product }) {
-  // We construct the image URL based on our backend server address
   const imageUrl = `http://localhost:5000/${product.image.replace(/\\/g, '/')}`;
 
   return (
-    <div className="card product-card h-100 shadow-sm">
+    // The entire card is wrapped in a Link component.
+    // The link is dynamic, using the product's unique ID.
+    <Link to={`/products/${product._id}`} className="card product-card h-100 shadow-sm text-decoration-none">
       <img src={imageUrl} className="card-img-top product-img" alt={product.name} />
       <div className="card-body d-flex flex-column">
-        <h5 className="product-title">{product.name}</h5>
-        <p className="card-text text-muted small">{product.description}</p>
-        <div className="d-flex justify-content-between align-items-center mt-auto">
-          <span className="product-price">{product.quantity} {product.unit}</span>
-          {/* This button now links to the main products page */}
-          <Link to="/products" className="btn btn-sm btn-primary">View Product</Link>
+        <h5 className="product-title text-dark">{product.name}</h5>
+        <p className="card-text text-muted small text-truncate">{product.description}</p>
+        
+        {/* The mt-auto class pushes this block to the bottom of the card */}
+        <div className="mt-auto">
+          <p className="product-price mb-2 text-dark">{product.quantity} {product.unit} available</p>
+          
+          {/* Farmer details are now included */}
+          <div className="text-muted small">
+            <i className="fas fa-user me-2"></i>
+            {/* Optional chaining (?.) is a safety check in case farmer data is missing */}
+            {product.farmer?.name}
+          </div>
+          <div className="text-muted small">
+            <i className="fas fa-map-marker-alt me-2"></i>
+            {product.farmer?.place}
+          </div>
         </div>
       </div>
-    </div>
+    </Link>
   );
 }
 
 export default ProductCard;
+

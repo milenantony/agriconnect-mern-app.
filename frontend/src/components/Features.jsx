@@ -1,5 +1,3 @@
-// src/components/Features.jsx
-
 import React from 'react';
 
 function Features() {
@@ -8,34 +6,34 @@ function Features() {
       <div className="container">
         <div className="section-title">
           <h2>Why Choose AgriConnect</h2>
-          <p>We provide innovative solutions for modern agricultural challenges</p>
+          <p>A complete solution connecting farmers, consumers, and administrators.</p>
         </div>
         <div className="row">
           <div className="col-md-4 mb-4">
-            <div className="feature-card">
+            <div className="feature-card h-100">
               <div className="feature-icon">
-                <i className="fas fa-tractor"></i>
+                <i className="fas fa-store-alt"></i>
               </div>
-              <h3>Modern Equipment</h3>
-              <p>Access to the latest farming technology and equipment rentals to maximize your yield and efficiency.</p>
+              <h3>Empower Your Farm</h3>
+              <p>Easily create your digital storefront. Register, manage your profile, and list your farm-fresh products online to reach a broader customer base.</p>
             </div>
           </div>
           <div className="col-md-4 mb-4">
-            <div className="feature-card">
+            <div className="feature-card h-100">
               <div className="feature-icon">
-                <i className="fas fa-seedling"></i>
+                <i className="fas fa-shopping-basket"></i>
               </div>
-              <h3>Quality Seeds</h3>
-              <p>Premium quality, non-GMO seeds with high germination rates for better crop production.</p>
+              <h3>Direct From The Source</h3>
+              <p>Consumers can browse, search, and filter a wide variety of local produce. Know exactly who grew your food and connect directly with the farm.</p>
             </div>
           </div>
           <div className="col-md-4 mb-4">
-            <div className="feature-card">
+            <div className="feature-card h-100">
               <div className="feature-icon">
-                <i className="fas fa-truck"></i>
+                <i className="fas fa-bullhorn"></i>
               </div>
-              <h3>Direct Delivery</h3>
-              <p>Farm-to-table delivery system that ensures fresh produce reaches consumers quickly.</p>
+              <h3>A Connected Marketplace</h3>
+              <p>Our platform features an active admin who manages inventory, sends low-stock alerts, and broadcasts urgent needs to create a responsive community.</p>
             </div>
           </div>
         </div>

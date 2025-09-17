@@ -5,7 +5,7 @@ import Footer from '../components/Footer';
 import axios from 'axios';
 import EditProductModal from '../components/EditProductModal';
 import { toast } from 'react-toastify';
-import Spinner from '../components/Spinner'; // 1. Import the Spinner
+import Spinner from '../components/Spinner';
 
 function FarmerDashboard() {
   const { user } = useContext(AuthContext);
@@ -14,22 +14,25 @@ function FarmerDashboard() {
   const [myProducts, setMyProducts] = useState([]);
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState(null);
-  
-  // 2. Add a new loading state specifically for the product list
   const [productsLoading, setProductsLoading] = useState(true);
 
   const fetchMyProducts = async () => {
-    if (!user || !user.token) return;
-    setProductsLoading(true); // 3. Set loading to true before fetching
+    if (!user || !user.token) {
+      setProductsLoading(false);
+      return;
+    }
     try {
+      setProductsLoading(true);
       const config = { headers: { Authorization: `Bearer ${user.token}` } };
       const { data } = await axios.get('http://localhost:5000/api/products/mine', config);
       setMyProducts(data);
     } catch (error) { 
-      console.error('Failed to fetch products', error);
-      toast.error("Could not load your products.");
+      // THE FIX IS HERE: We now use the 'error' variable.
+      const message = error.response?.data?.message || "Could not load your products.";
+      toast.error(message);
+    } finally {
+      setProductsLoading(false);
     }
-    setProductsLoading(false); // 3. Set loading to false after fetching (in both cases)
   };
 
   useEffect(() => {
@@ -90,75 +93,122 @@ function FarmerDashboard() {
     }
   };
 
-  const handleDelete = async (productId) => {
-    if (window.confirm('Are you sure you want to delete this product?')) {
-      try {
-        const config = { headers: { Authorization: `Bearer ${user.token}` } };
-        await axios.delete(`http://localhost:5000/api/products/${productId}`, config);
-        toast.success('Product deleted successfully!');
-        fetchMyProducts();
-      } catch (error) {
-        const message = error.response?.data?.message || 'Failed to delete product.';
-        toast.error(message);
-      }
-    }
+  const handleDelete = (productId) => {
+    const performDelete = async (id) => {
+        try {
+            const config = { headers: { Authorization: `Bearer ${user.token}` } };
+            await axios.delete(`http://localhost:5000/api/products/${id}`, config);
+            toast.success('Product deleted successfully!');
+            fetchMyProducts();
+        } catch (error) {
+            const message = error.response?.data?.message || 'Failed to delete product.';
+            toast.error(message);
+        }
+    };
+    
+    const ConfirmationToast = ({ closeToast }) => (
+      <div>
+        <p className="mb-2 fw-bold">Confirm Deletion</p>
+        <p className="mb-3">Are you sure you want to permanently delete this product?</p>
+        <div className="d-flex justify-content-end">
+            <button 
+                className="btn btn-sm btn-danger me-2" 
+                onClick={() => {
+                    performDelete(productId);
+                    closeToast();
+                }}
+            >
+                Yes, Delete
+            </button>
+            <button className="btn btn-sm btn-secondary" onClick={closeToast}>
+                Cancel
+            </button>
+        </div>
+      </div>
+    );
+
+    toast.error(<ConfirmationToast />, {
+      position: "top-center",
+      autoClose: false,
+      closeOnClick: false,
+      draggable: false,
+      theme: "colored"
+    });
   };
 
-  if (!user) return <div>Loading...</div>;
+  if (!user) return <Spinner />;
 
   return (
     <>
       <Navbar />
       <div className="bg-light" style={{ minHeight: '100vh' }}>
         <div className="container" style={{ paddingTop: '100px', paddingBottom: '50px' }}>
-          <h1 className="mb-4">Farmer Dashboard</h1>
+          
+          <div className="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h1 className="mb-0">Farmer Dashboard</h1>
+                <p className="lead text-muted">Welcome back, {user.name}!</p>
+            </div>
+          </div>
+          
           <div className="row g-4">
             <div className="col-lg-5">
-              <div className="card shadow-sm h-100">
+              <div className="card shadow-sm">
+                <div className="card-header bg-white py-3">
+                    <h5 className="mb-0"><i className="fas fa-plus-circle me-2 text-success"></i>Add New Product</h5>
+                </div>
                 <div className="card-body">
-                  <h4 className="card-title mb-4">Add New Product</h4>
                   <form onSubmit={handleSubmit}>
                     <div className="mb-3"><input type="text" className="form-control" placeholder="Product Name" name="name" value={productData.name} onChange={handleChange} required /></div>
                     <div className="mb-3"><textarea className="form-control" placeholder="Product Description" name="description" value={productData.description} onChange={handleChange} rows="3"></textarea></div>
-                    <div className="mb-3"><select className="form-select" name="category" value={productData.category} onChange={handleChange} required><option>Vegetable</option><option>Fruit</option></select></div>
+                    <div className="mb-3">
+                        <select className="form-select" name="category" value={productData.category} onChange={handleChange} required>
+                            <option value="Vegetable">Vegetable</option>
+                            <option value="Fruit">Fruit</option>
+                            <option value="Dairy">Dairy</option>
+                            <option value="Grain">Grain</option>
+                        </select>
+                    </div>
                     <div className="row mb-3"><div className="col"><input type="number" className="form-control" placeholder="Quantity" name="quantity" value={productData.quantity} onChange={handleChange} required /></div><div className="col"><input type="text" className="form-control" placeholder="Unit (kg, dozen)" name="unit" value={productData.unit} onChange={handleChange} required /></div></div>
                     <div className="mb-3"><input type="file" className="form-control" name="image" onChange={handleFileChange} required /></div>
-                    <button type="submit" className="btn btn-primary w-100">Add Product</button>
+                    <button type="submit" className="btn btn-success w-100">Add Product</button>
                   </form>
                 </div>
               </div>
             </div>
+            
             <div className="col-lg-7">
               <div className="card shadow-sm">
+                <div className="card-header bg-white py-3">
+                    <h5 className="mb-0"><i className="fas fa-list me-2 text-primary"></i>My Products</h5>
+                </div>
                 <div className="card-body">
-                  <h4 className="card-title mb-4">My Products</h4>
-                  {/* 4. Use the new loading state here */}
                   {productsLoading ? (
                     <Spinner />
                   ) : (
                     <div className="table-responsive">
                       <table className="table table-hover align-middle">
-                        <thead><tr><th>#</th><th>Product</th><th>Stock</th><th>Actions</th></tr></thead>
                         <tbody>
                           {myProducts.length === 0 ? (
-                            <tr><td colSpan="4" className="text-center">You have not added any products yet.</td></tr>
+                            <tr><td colSpan="4" className="text-center py-4">You have not added any products yet.</td></tr>
                           ) : (
-                            myProducts.map((product, index) => (
+                            myProducts.map((product) => (
                               <tr key={product._id}>
-                                <td>{index + 1}</td>
                                 <td>
-                                  <div className="d-flex align-items-center">
-                                    <img src={`http://localhost:5000/${product.image.replace(/\\/g, '/')}`} alt={product.name} width="50" height="50" className="rounded me-3" style={{objectFit: 'cover'}} />
-                                    <div>
-                                      <h6 className="mb-0">{product.name}</h6>
-                                      <small className="text-muted">{product.description}</small>
-                                    </div>
-                                  </div>
+                                  <img src={`http://localhost:5000/${product.image.replace(/\\/g, '/')}`} alt={product.name} width="60" height="60" className="rounded" style={{objectFit: 'cover'}} />
+                                </td>
+                                <td>
+                                  <h6 className="mb-0">{product.name}</h6>
+                                  <small className="text-muted">{product.description}</small>
                                 </td>
                                 <td>{product.quantity} {product.unit}</td>
                                 <td>
-                                  <button className="btn btn-sm btn-outline-secondary me-2" onClick={() => handleEditClick(product)}>Edit</button>
-                                  <button className="btn btn-sm btn-outline-danger" onClick={() => handleDelete(product._id)}>Delete</button>
+                                  <button className="btn btn-sm btn-outline-success me-2 mb-2" onClick={() => handleEditClick(product)} title="Edit">
+                                    <i className="fas fa-edit"></i>
+                                  </button>
+                                  <button className="btn btn-sm btn-outline-danger" onClick={() => handleDelete(product._id)} title="Delete">
+                                    <i className="fas fa-trash"></i>
+                                  </button>
                                 </td>
                               </tr>
                             ))

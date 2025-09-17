@@ -1,40 +1,47 @@
+// src/components/Navbar.jsx
+
 import React, { useState, useEffect, useContext } from 'react';
-import { Link, NavLink, useNavigate } from 'react-router-dom';
+import { Link, NavLink } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import axios from 'axios';
 import { toast } from 'react-toastify';
 
 function Navbar() {
   const { user, logout } = useContext(AuthContext);
-  const navigate = useNavigate();
-  const [unreadCount, setUnreadCount] = useState(0);
+  // The useNavigate hook is no longer needed here, so the red line is gone.
+  const [unreadNotifications, setUnreadNotifications] = useState(0);
+  const [newBroadcasts, setNewBroadcasts] = useState(0);
 
+  // This effect now fetches counts only when the user changes (e.g., on login/logout).
   useEffect(() => {
-    let intervalId;
-    const fetchNotificationCount = async () => {
+    const fetchData = async () => {
       if (user && user.role.toLowerCase() === 'farmer' && user.token) {
         try {
           const config = { headers: { Authorization: `Bearer ${user.token}` } };
-          const { data } = await axios.get('http://localhost:5000/api/notifications/mine', config);
-          const count = data.filter(n => !n.isRead).length;
-          setUnreadCount(count);
+          const [notificationsRes, broadcastsRes] = await Promise.all([
+            axios.get('http://localhost:5000/api/notifications/mine', config),
+            axios.get('http://localhost:5000/api/broadcasts', config)
+          ]);
+          setUnreadNotifications(notificationsRes.data.filter(n => !n.isRead).length);
+          setNewBroadcasts(broadcastsRes.data.filter(b => Array.isArray(b.seenBy) && !b.seenBy.includes(user._id)).length);
         } catch (error) {
-          console.error('Failed to fetch notification count', error);
+          console.error('Failed to fetch navbar data', error);
         }
       } else {
-        setUnreadCount(0);
+        // If user is admin or logged out, reset counts to zero
+        setUnreadNotifications(0);
+        setNewBroadcasts(0);
       }
     };
-    fetchNotificationCount();
-    intervalId = setInterval(fetchNotificationCount, 30000);
-    return () => clearInterval(intervalId);
+    fetchData();
   }, [user]);
 
   const handleLogout = () => {
-    logout();
-    navigate('/login');
+    logout(); // This now correctly calls the function from AuthContext which handles the redirect
     toast.info("You have been logged out.");
   }
+
+  // --- Link Definitions for different user roles ---
 
   const adminLinks = (
     <>
@@ -46,27 +53,34 @@ function Navbar() {
       </li>
     </>
   );
-
+  
   const farmerLinks = (
     <>
       <li className="nav-item"><NavLink className="nav-link" to="/">Home</NavLink></li>
       <li className="nav-item"><NavLink className="nav-link" to="/products">All Products</NavLink></li>
+      <li className="nav-item"><NavLink className="nav-link" to="/services">Services</NavLink></li>
       <li className="nav-item"><NavLink className="nav-link" to="/about">About Us</NavLink></li>
-      <li className="nav-item"><NavLink className="nav-link" to="/broadcasts">Admin Requests</NavLink></li>
-      <li className="nav-item"><NavLink className="nav-link" to="/farmer/dashboard">My Dashboard</NavLink></li>
-      
       <li className="nav-item">
-        {/* THIS IS THE CORRECTED LINE */}
-        <NavLink className="nav-link position-relative" to="/notifications" title="Notifications">
-          <i className="fas fa-bell"></i>
-          {unreadCount > 0 && (
-            <span className="badge rounded-pill bg-danger" style={{ position: 'absolute', top: '5px', right: '0px', fontSize: '0.6em' }}>
-              {unreadCount}
+        <NavLink className="nav-link position-relative" to="/broadcasts">
+          Admin Requests
+          {newBroadcasts > 0 && (
+            <span className="badge rounded-pill bg-danger" style={{ position: 'absolute', top: '5px', right: '-5px', fontSize: '0.6em' }}>
+              {newBroadcasts}
             </span>
           )}
         </NavLink>
       </li>
-
+      <li className="nav-item"><NavLink className="nav-link" to="/farmer/dashboard">My Dashboard</NavLink></li>
+      <li className="nav-item">
+        <NavLink className="nav-link position-relative" to="/notifications" title="Notifications">
+          <i className="fas fa-bell"></i>
+          {unreadNotifications > 0 && (
+            <span className="badge rounded-pill bg-danger" style={{ position: 'absolute', top: '5px', right: '0px', fontSize: '0.6em' }}>
+              {unreadNotifications}
+            </span>
+          )}
+        </NavLink>
+      </li>
       <li className="nav-item dropdown">
         <a className="nav-link dropdown-toggle d-flex align-items-center" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
           <img 
@@ -89,6 +103,7 @@ function Navbar() {
     <>
       <li className="nav-item"><NavLink className="nav-link" to="/">Home</NavLink></li>
       <li className="nav-item"><NavLink className="nav-link" to="/products">Products</NavLink></li>
+      <li className="nav-item"><NavLink className="nav-link" to="/services">Services</NavLink></li>
       <li className="nav-item"><NavLink className="nav-link" to="/about">About Us</NavLink></li>
     </>
   );

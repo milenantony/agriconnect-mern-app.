@@ -1,11 +1,15 @@
-// backend/routes/productRoutes.js
-
 const express = require('express');
 const router = express.Router();
-const { createProduct, getMyProducts, updateProduct, getAllProducts ,deleteProduct} = require('../controllers/productController');
+// 1. Import all necessary controller functions
+const {
+    createProduct,
+    getMyProducts,
+    updateProduct,
+    getAllProducts,
+    deleteProduct,
+    getProductById
+} = require('../controllers/productController');
 const { protect } = require('../middleware/authMiddleware');
-
-// --- THIS BLOCK WAS MISSING IN MY LAST RESPONSE ---
 const multer = require('multer');
 const path = require('path');
 
@@ -20,14 +24,29 @@ const storage = multer.diskStorage({
 });
 
 const upload = multer({ storage: storage });
-// --------------------------------------------------
 
-// Define the API routes
-router.post('/', protect, upload.single('image'), createProduct);
-router.get('/mine', protect, getMyProducts);
-router.put('/:id', protect, updateProduct);
+
+// --- Define the API routes ---
+
+// Public route to get all products (now supports search/filter)
 router.get('/', getAllProducts);
+
+// Farmer's private route to get their own products
+router.get('/mine', protect, getMyProducts);
+
+// Public route to get a single product by ID
+// IMPORTANT: This dynamic route must come AFTER specific routes like '/mine'
+// to avoid conflicts.
+router.get('/:id', getProductById);
+
+// Farmer's private route to create a product
+router.post('/', protect, upload.single('image'), createProduct);
+
+// Farmer's private route to update a product
+router.put('/:id', protect, updateProduct);
+
+// Farmer's private route to delete a product
 router.delete('/:id', protect, deleteProduct);
 
-
 module.exports = router;
+

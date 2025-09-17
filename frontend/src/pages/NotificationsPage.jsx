@@ -13,60 +13,86 @@ function NotificationsPage() {
   const [loading, setLoading] = useState(true);
 
   const fetchNotifications = async () => {
-    if (!user || !user.token) {
-      setLoading(false);
-      return;
-    }
+    if (!user || !user.token) { setLoading(false); return; }
     try {
       const config = { headers: { Authorization: `Bearer ${user.token}` } };
       const { data } = await axios.get('http://localhost:5000/api/notifications/mine', config);
       setNotifications(data);
-    } catch (error) {
-      toast.error("Could not fetch notifications.");
-    } finally {
-      setLoading(false);
-    }
+    } catch (error) { 
+      const message = error.response?.data?.message || "Could not fetch notifications.";
+      toast.error(message);
+    } 
+    finally { setLoading(false); }
   };
 
   useEffect(() => {
-    fetchNotifications();
+    if (user) fetchNotifications();
   }, [user]);
 
   const handleMarkAsRead = async (notificationId) => {
     try {
       const config = { headers: { Authorization: `Bearer ${user.token}` } };
       await axios.put(`http://localhost:5000/api/notifications/${notificationId}/read`, {}, config);
-      // Update the state on the frontend for instant feedback
       setNotifications(notifications.map(n => n._id === notificationId ? { ...n, isRead: true } : n));
-    } catch (error) {
-      toast.error("Could not mark as read.");
+    } catch (error) { 
+      const message = error.response?.data?.message || "Could not mark as read.";
+      toast.error(message);
     }
   };
   
-  // THIS FUNCTION IS NOW FIXED
   const handleMarkAllAsRead = async () => {
     try {
       const config = { headers: { Authorization: `Bearer ${user.token}` } };
       await axios.put('http://localhost:5000/api/notifications/read-all', {}, config);
-      // Refetch notifications to update the UI with the changes from the backend
       fetchNotifications();
       toast.success("All notifications marked as read.");
-    } catch (error) {
-      toast.error("Could not mark all as read.");
+    } catch (error) { 
+      const message = error.response?.data?.message || "Could not mark all as read.";
+      toast.error(message);
     }
   };
   
-  const handleClearAll = async () => {
-    if (window.confirm('Are you sure you want to clear all notifications permanently?')) {
+  const handleClearAll = () => {
+    const performClear = async () => {
       try {
         const config = { headers: { Authorization: `Bearer ${user.token}` } };
         await axios.delete('http://localhost:5000/api/notifications/delete-all', config);
-        setNotifications([]); // Clear notifications on the frontend
+        setNotifications([]);
         toast.success("All notifications cleared.");
-      } catch (error) {
-        toast.error("Could not clear notifications.");
+      } catch (error) { 
+        const message = error.response?.data?.message || "Could not clear notifications.";
+        toast.error(message);
       }
-    }
+    };
+
+    const ConfirmationToast = ({ closeToast }) => (
+      <div>
+        <p className="mb-2 fw-bold">Confirm Action</p>
+        <p className="mb-3">Are you sure you want to permanently clear all notifications?</p>
+        <div className="d-flex justify-content-end">
+            <button 
+                className="btn btn-sm btn-danger me-2" 
+                onClick={() => {
+                    performClear();
+                    closeToast();
+                }}
+            >
+                Yes, Clear All
+            </button>
+            <button className="btn btn-sm btn-secondary" onClick={closeToast}>
+                Cancel
+            </button>
+        </div>
+      </div>
+    );
+
+    toast.error(<ConfirmationToast />, {
+      position: "top-center",
+      autoClose: false,
+      closeOnClick: false,
+      draggable: false,
+      theme: "colored"
+    });
   };
   
   const unreadCount = notifications.filter(n => !n.isRead).length;
@@ -78,43 +104,57 @@ function NotificationsPage() {
       <div className="bg-light" style={{ minHeight: '100vh' }}>
         <div className="container" style={{ paddingTop: '100px', paddingBottom: '50px' }}>
           <div className="d-flex justify-content-between align-items-center mb-4">
-            <h2 className="mb-0">My Notifications</h2>
+            <div>
+                <h2 className="mb-0">My Notifications</h2>
+                <p className="text-muted mb-0">You have {unreadCount} unread messages.</p>
+            </div>
             <div>
               {unreadCount > 0 && (
                 <button className="btn btn-primary me-2" onClick={handleMarkAllAsRead}>Mark All as Read</button>
               )}
               {notifications.length > 0 && (
-                <button className="btn btn-danger" onClick={handleClearAll}>Clear All</button>
+                <button className="btn btn-outline-danger" onClick={handleClearAll}>Clear All</button>
               )}
             </div>
           </div>
 
-          {notifications.length === 0 ? (
-            <div className="card shadow-sm"><div className="card-body text-center"><p className="mb-0">You have no notifications.</p></div></div>
-          ) : (
-            <div className="list-group">
-              {notifications.map(notif => (
-                <div key={notif._id} className={`list-group-item list-group-item-action ${!notif.isRead ? 'list-group-item-info' : ''}`}>
-                  <div className="d-flex w-100 justify-content-between">
-                    <p className={`mb-1 ${!notif.isRead ? 'fw-bold' : ''}`}>{notif.message}</p>
-                    <small>{new Date(notif.createdAt).toLocaleString()}</small>
-                  </div>
-                  <div className="d-flex justify-content-between align-items-center mt-2">
-                      <small className="text-muted">
-                        <Link to="/farmer/dashboard" className="text-decoration-none">
-                          Regarding Product: {notif.product?.name || 'General Message'}
-                        </Link>
-                      </small>
-                      {!notif.isRead && (
-                        <button className="btn btn-sm btn-outline-success" onClick={() => handleMarkAsRead(notif._id)}>
-                          Mark as Read
-                        </button>
-                      )}
-                  </div>
+          <div className="card shadow-sm border-0">
+            <div className="card-body p-0">
+              {notifications.length === 0 ? (
+                <div className="text-center p-5">
+                    <i className="fas fa-envelope-open-text fa-4x text-muted mb-3"></i>
+                    <h4 className="text-muted">Your Inbox is Empty</h4>
+                    <p className="text-muted">You have no notifications at the moment.</p>
                 </div>
-              ))}
+              ) : (
+                <div className="list-group list-group-flush">
+                  {notifications.map(notif => (
+                    <div key={notif._id} className={`list-group-item d-flex align-items-center p-3 ${!notif.isRead ? 'bg-light' : ''}`}>
+                      <div className="me-3">
+                        {!notif.isRead && <span className="badge bg-primary rounded-circle p-1">&nbsp;</span>}
+                      </div>
+                      <div className="flex-grow-1">
+                          <Link to="/farmer/dashboard" className="text-decoration-none text-dark">
+                            <p className={`mb-1 ${!notif.isRead ? 'fw-bold' : ''}`}>{notif.message}</p>
+                          </Link>
+                          <small className="text-muted">
+                            Regarding Product: {notif.product?.name || 'General Message'}
+                          </small>
+                      </div>
+                      <div className="ms-3 text-nowrap">
+                        {!notif.isRead && (
+                          <button className="btn btn-sm btn-outline-success me-2" onClick={() => handleMarkAsRead(notif._id)} title="Mark as Read">
+                            <i className="fas fa-check"></i>
+                          </button>
+                        )}
+                        <small className="text-muted">{new Date(notif.createdAt).toLocaleDateString()}</small>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
-          )}
+          </div>
         </div>
       </div>
       <Footer />
