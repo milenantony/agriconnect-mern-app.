@@ -20,7 +20,7 @@ function ProductsPage() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
-  const categories = ['Vegetable', 'Fruit', 'Dairy', 'Grain'];
+  const categories = ['Vegetable', 'Fruit',];
 
   useEffect(() => {
     const fetchProducts = async () => {

@@ -165,8 +165,6 @@ function FarmerDashboard() {
                         <select className="form-select" name="category" value={productData.category} onChange={handleChange} required>
                             <option value="Vegetable">Vegetable</option>
                             <option value="Fruit">Fruit</option>
-                            <option value="Dairy">Dairy</option>
-                            <option value="Grain">Grain</option>
                         </select>
                     </div>
                     <div className="row mb-3"><div className="col"><input type="number" className="form-control" placeholder="Quantity" name="quantity" value={productData.quantity} onChange={handleChange} required /></div><div className="col"><input type="text" className="form-control" placeholder="Unit (kg, dozen)" name="unit" value={productData.unit} onChange={handleChange} required /></div></div>
